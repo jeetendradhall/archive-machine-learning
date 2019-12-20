@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[193]:
+# In[1]:
 
 
 #imports
@@ -9,7 +9,7 @@ import random
 from random import randrange
 
 
-# In[232]:
+# In[2]:
 
 
 #tic-tac-toe class to encapsulate the following:
@@ -212,7 +212,53 @@ class TicTacToe:
         # and update the value of the previous board using this board
         for i in range (n, 0, -1): #n, n-1, ...1
             self.learn_value (boards[i-1], boards[i])
-            
+
+    #play a game (after having learnt)
+    #return who won the game
+    def play (self, naive_adversary = True):
+        #start a fresh game
+        board = self.get_start_board ()
+        #the player could make a move
+        can_play = True
+        #who won the game?
+        winner = None
+        
+        #while there are more moves
+        while (can_play):
+            #X plays
+            #we are greedy
+            board, can_play = self.play_a_greedy_move (board, 'X')
+            #break if no more moves possible
+            if can_play == False:
+                break
+            #break if won
+            winner = self.get_winner (board)
+            if winner != None:
+                break
+                
+            #O plays
+            #if adversary is naive
+            if naive_adversary:
+                board, can_play = self.play_a_random_move (board, 'O')
+            #if adversary is greedy
+            else:
+                board, can_play = self.play_a_greedy_move (board, 'O')
+            #break if no more moves possible
+            if can_play == False:
+                break
+            #break if won
+            winner = self.get_winner (board)
+            if winner != None:
+                break
+        
+        #return who won the game
+        return winner
+    
+    #play a game (while learning)
+    #play while exploring yes/no
+    #play against a naive or a greedy advisory
+    #TODO: with a separate play() defined,
+    # we now do not need the 'explore' flag
     def play_a_stride (self, explore = True, naive_adversary = True):
         #start a fresh game
         board = self.get_start_board ()
@@ -271,19 +317,38 @@ class TicTacToe:
     def learn (self, num_strides):
         for i in range (num_strides):
             self.play_a_stride ()
+            
 
 
-# In[234]:
+# In[33]:
 
 
 #test learn() (exploratory 'X' and naive 'O')
 ttt = TicTacToe ()
-ttt.learn (1000)
+ttt.learn (10)
 #print states with (value_cutoff, num_moves cutoff)
 ttt.print_value_function (2, 5)
 
 
-# In[210]:
+# In[36]:
+
+
+#test play() (greedy 'X' and naive 'O')
+#ttt = TicTacToe () #use ttt instance with the learnt value function
+for i in range (25): 
+    print (ttt.play (), ' won!!')
+
+
+# In[49]:
+
+
+#test play() (greedy 'X' and greedy 'O')
+#ttt = TicTacToe () #use ttt instance with the learnt value function
+for i in range (25):
+    print (ttt.play (True), ' won!!')
+
+
+# In[ ]:
 
 
 #test play_a_stride for exploratory 'X' and naive 'O'
@@ -292,7 +357,7 @@ ttt.play_a_stride ()
 ttt.print_value_function ()
 
 
-# In[211]:
+# In[ ]:
 
 
 #test play_a_stride for exploratory 'X' and greedy 'O'
@@ -301,7 +366,7 @@ ttt.play_a_stride (True, False)
 ttt.print_value_function ()
 
 
-# In[212]:
+# In[ ]:
 
 
 #test play_a_stride for greedy 'X' and naive 'O'
@@ -310,7 +375,7 @@ ttt.play_a_stride (False, True)
 ttt.print_value_function ()
 
 
-# In[213]:
+# In[ ]:
 
 
 #test play_a_stride for greedy 'X' and greedy 'O'
@@ -319,7 +384,7 @@ ttt.play_a_stride (False, False)
 ttt.print_value_function ()
 
 
-# In[196]:
+# In[ ]:
 
 
 #test get_winner
@@ -329,7 +394,7 @@ board [0] = board [4] = board [8] = 'X'
 print (ttt.get_winner (board)) #X
 
 
-# In[197]:
+# In[ ]:
 
 
 #test get_value
@@ -341,7 +406,7 @@ board [8] = None
 print (ttt.get_value (board)) #0.5
 
 
-# In[198]:
+# In[ ]:
 
 
 #test play_a_random_move
@@ -353,7 +418,7 @@ board = ['O'] * 9
 print (ttt.play_a_random_move (board, 'X')) #board [O...O], False
 
 
-# In[199]:
+# In[ ]:
 
 
 #test get_next_greedy_state
@@ -365,7 +430,7 @@ next_board, value = ttt.get_next_greedy_state (next_board, 'X')
 print (next_board, value) #board [X X...], 0.5
 
 
-# In[200]:
+# In[ ]:
 
 
 #test play_a_greedy_move
@@ -377,7 +442,7 @@ next_board, value = ttt.play_a_greedy_move (next_board, 'X')
 print (next_board, value) #board [X X...], True
 
 
-# In[201]:
+# In[ ]:
 
 
 #test play_an_explore_exploit_move
@@ -394,7 +459,7 @@ next_board, value = ttt.play_an_explore_exploit_move (next_board, 'X')
 print (next_board, value) #board [X X...X...X...], True
 
 
-# In[202]:
+# In[ ]:
 
 
 #test learn_value
@@ -414,7 +479,7 @@ ttt.learn_value (board_this, board_next)
 ttt.print_value_function () #[0.51, 0.5]
 
 
-# In[203]:
+# In[ ]:
 
 
 #test backpropagate_values for 'X' win
@@ -439,7 +504,7 @@ ttt.backpropagate_values (stripe_states)
 ttt.print_value_function ()# [0.51, 0.5051, 0.505051, 0.50505051]
 
 
-# In[204]:
+# In[ ]:
 
 
 #test backpropagate_values for 'O' win
