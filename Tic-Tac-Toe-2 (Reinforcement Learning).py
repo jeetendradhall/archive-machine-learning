@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[99]:
+# In[193]:
 
 
 #imports
@@ -9,31 +9,31 @@ import random
 from random import randrange
 
 
-# In[100]:
+# In[232]:
 
 
 #tic-tac-toe class to encapsulate the following:
-#*1. state (a 3x3 board), get_start_board
-#*2. reward (state) (1.0 for an X stripe,
+#1. state (a 3x3 board), get_start_board
+#2. reward (state) (1.0 for an X stripe,
 #    0.0 for O stripe, 0.5 by default,
 #    learnt rewards from value function) get_value ()
-#*3. action - play_a_random_move,
-#*            play_an_explore_exploit_move,
-#*           play_a_greedy_move
-#*4. value function - a map from state to its long-term value
+#3. action - play_a_random_move,
+#            play_an_explore_exploit_move,
+#           play_a_greedy_move
+#4. value function - a map from state to its long-term value
 #5. stride (game) - a sequence of states leading to the end of a game
-#6. episodes - a set of strides (games) played 
+#6. episodes/learn - a set of strides (games) played 
 #               to learn the value function
 #7. helper functions:
-#*    get_value () - goal state value of 1.0 or 0.0;
+#    get_value () - goal state value of 1.0 or 0.0;
 #                   value function;
 #                   default value
-#*    backpropagate_values () - of states in a stride in reverse order
-#*    get_winner () - do we have a winner? X, O, or None yet
-#*8. winning stripes - set of 8 stripes of 
+#    backpropagate_values () - of states in a stride in reverse order
+#    get_winner () - do we have a winner? X, O, or None yet
+#8. winning stripes - set of 8 stripes of 
 #                      row or column or diagonal of size 3
-#*9. explore_exploit percentage
-#*10. learning_rate
+#9. explore_exploit percentage
+#10. learning_rate
 class TicTacToe:
     def __init__ (self):
         #also see helper get_start_board (), init_start_board ()
@@ -46,12 +46,21 @@ class TicTacToe:
         self.winning_stripes = [[0,1,2], [3,4,5], [6,7,8], [0,3,6]                                , [1,4,7], [2,5,8], [0,4,8], [2,4,6]]
         #percentage of exploration
         self.explore_exploit = 0.3
-        self.learning_rate = 0.01
+        self.learning_rate = 0.1
     
     #helper to initialize the start board
     # at the beginning of every stride
     #def init_start_board (self):
         #self.board = self.get_start_board ()
+        
+    def print_value_function (self, cutoff = 0.0, num_moves = 0):
+        print ('Value Function:')
+        for state, value in self.value_function.items ():
+            
+            #if we have a state value above cutoff and
+            # if there are at least 'num_moves' moves made
+            if value >= cutoff and             state.count ('None') <= (9 - num_moves):
+                print (state, value)
     
     #empty 3x3 tic-tac-toe board
     def get_start_board (self):
@@ -72,17 +81,18 @@ class TicTacToe:
         winner = self.get_winner (board)
         #'X' won, so we won, so value = 1.0
         if winner == 'X':
-            print ('got X winner value for ', board)
+            #print ('got X winner value for ', board)
             return self.reward_x
         #'O' won, we lost, so value = 0.0
         elif winner == 'O':
-            print ('got O winner value for ', board)
+            #print ('got O winner value for ', board)
             return self.reward_o
         #no winner yet
         else:
             #if we have a non-default (0.5) value
             if str (board) in self.value_function.keys ():
-                print ('got from value function, value ',                       self.value_function [str(board)], ' for ', board)
+                #print ('got from value function, value ',\
+                #       self.value_function [str(board)], ' for ', board)
                 return self.value_function [str(board)]
             else:
                 #default value of a state
@@ -111,7 +121,7 @@ class TicTacToe:
     def play_a_random_move (self, board, mark):
         #if there is no empty spot 
         if None not in board:
-            return False #could not play
+            return board, False #could not play
 
         #get a list of empty spots
         l_empty = [i for i, x in enumerate(board) if x == None]
@@ -189,7 +199,12 @@ class TicTacToe:
             return self.play_a_random_move (board, mark)
         else:
             return self.play_a_greedy_move (board, mark)
-        
+    
+    #the last state is usually a 'X' win or a 'O' win state
+    # or a 'draw' state
+    #backpropagate, starting from the last state and
+    # percolating the value backwards towards the previous
+    # state by a learning factor
     def backpropagate_values (self, boards):
         #index of the last board
         n = len (boards) - 1
@@ -197,9 +212,114 @@ class TicTacToe:
         # and update the value of the previous board using this board
         for i in range (n, 0, -1): #n, n-1, ...1
             self.learn_value (boards[i-1], boards[i])
+            
+    def play_a_stride (self, explore = True, naive_adversary = True):
+        #start a fresh game
+        board = self.get_start_board ()
+        
+        #list of boards (states) in the stripe
+        stripe_states = []
+        
+        #the player could make a move
+        can_play = True
+        
+        #while there are more moves
+        while (can_play):
+
+            #X plays
+
+            #if we are exploring and exploiting
+            if explore:
+                board, can_play =                 self.play_an_explore_exploit_move (board, 'X')
+            #if we are greedy
+            else:
+                board, can_play = self.play_a_greedy_move (board, 'X')
+                
+            #save a copy of the board (state) after making the move
+            stripe_states.append (board.copy ())
+            
+            #break if no more moves possible
+            if can_play == False:
+                break
+            #break if won
+            if self.get_winner (board) != None:
+                break
+                
+            #O plays
+            
+            #if adversary is naive
+            if naive_adversary:
+                board, can_play = self.play_a_random_move (board, 'O')
+            #if adversary is greedy
+            else:
+                board, can_play = self.play_a_greedy_move (board, 'O')
+            
+            #save a copy of the board (state) after making the move
+            stripe_states.append (board.copy ())
+            #break if no more moves possible
+            if can_play == False:
+                break
+            #break if won
+            if self.get_winner (board) != None:
+                break
+                
+        #backpropagate the learning
+        self.backpropagate_values (stripe_states)
+    
+    #learn by playing n number of strides
+    # (exploratory 'X' and naive 'O')
+    def learn (self, num_strides):
+        for i in range (num_strides):
+            self.play_a_stride ()
 
 
-# In[101]:
+# In[234]:
+
+
+#test learn() (exploratory 'X' and naive 'O')
+ttt = TicTacToe ()
+ttt.learn (1000)
+#print states with (value_cutoff, num_moves cutoff)
+ttt.print_value_function (2, 5)
+
+
+# In[210]:
+
+
+#test play_a_stride for exploratory 'X' and naive 'O'
+ttt = TicTacToe ()
+ttt.play_a_stride ()
+ttt.print_value_function ()
+
+
+# In[211]:
+
+
+#test play_a_stride for exploratory 'X' and greedy 'O'
+ttt = TicTacToe ()
+ttt.play_a_stride (True, False)
+ttt.print_value_function ()
+
+
+# In[212]:
+
+
+#test play_a_stride for greedy 'X' and naive 'O'
+ttt = TicTacToe ()
+ttt.play_a_stride (False, True)
+ttt.print_value_function ()
+
+
+# In[213]:
+
+
+#test play_a_stride for greedy 'X' and greedy 'O'
+ttt = TicTacToe ()
+ttt.play_a_stride (False, False)
+ttt.print_value_function ()
+
+
+# In[196]:
 
 
 #test get_winner
@@ -209,7 +329,7 @@ board [0] = board [4] = board [8] = 'X'
 print (ttt.get_winner (board)) #X
 
 
-# In[102]:
+# In[197]:
 
 
 #test get_value
@@ -221,7 +341,7 @@ board [8] = None
 print (ttt.get_value (board)) #0.5
 
 
-# In[103]:
+# In[198]:
 
 
 #test play_a_random_move
@@ -233,7 +353,7 @@ board = ['O'] * 9
 print (ttt.play_a_random_move (board, 'X')) #board [O...O], False
 
 
-# In[104]:
+# In[199]:
 
 
 #test get_next_greedy_state
@@ -245,7 +365,7 @@ next_board, value = ttt.get_next_greedy_state (next_board, 'X')
 print (next_board, value) #board [X X...], 0.5
 
 
-# In[105]:
+# In[200]:
 
 
 #test play_a_greedy_move
@@ -257,7 +377,7 @@ next_board, value = ttt.play_a_greedy_move (next_board, 'X')
 print (next_board, value) #board [X X...], True
 
 
-# In[106]:
+# In[201]:
 
 
 #test play_an_explore_exploit_move
@@ -274,7 +394,7 @@ next_board, value = ttt.play_an_explore_exploit_move (next_board, 'X')
 print (next_board, value) #board [X X...X...X...], True
 
 
-# In[107]:
+# In[202]:
 
 
 #test learn_value
@@ -291,10 +411,10 @@ board_this [0] = 'X' #just to have another 'key' in value_function
 board_next = ttt.get_start_board()
 board_next [0] = board_next [4] = board_next [8] = 'O'
 ttt.learn_value (board_this, board_next)
-print (ttt.value_function) #[0.51, 0.5]
+ttt.print_value_function () #[0.51, 0.5]
 
 
-# In[108]:
+# In[203]:
 
 
 #test backpropagate_values for 'X' win
@@ -306,7 +426,7 @@ board = ttt.get_start_board()
 # second column has 2 'O's [1,4]
 stripe_moves = [(0, 'X'), (1, 'O'), (3, 'X'), (4, 'O'), (6, 'X')]
 
-#list boards (states) in the stripe
+#list of boards (states) in the stripe
 stripe_states = []
 
 for i, mark in stripe_moves:
@@ -316,10 +436,10 @@ for i, mark in stripe_moves:
     stripe_states.append (board.copy ())
     
 ttt.backpropagate_values (stripe_states)
-print (ttt.value_function)# [0.51, 0.5051, 0.505051, 0.50505051]
+ttt.print_value_function ()# [0.51, 0.5051, 0.505051, 0.50505051]
 
 
-# In[109]:
+# In[204]:
 
 
 #test backpropagate_values for 'O' win
@@ -331,7 +451,7 @@ board = ttt.get_start_board()
 # second column has 2 'X's [1,4]
 stripe_moves = [(0, 'O'), (1, 'X'), (3, 'O'), (4, 'X'), (6, 'O')]
 
-#list boards (states) in the stripe
+#list of boards (states) in the stripe
 stripe_states = []
 
 for i, mark in stripe_moves:
@@ -341,5 +461,5 @@ for i, mark in stripe_moves:
     stripe_states.append (board.copy ())
     
 ttt.backpropagate_values (stripe_states)
-print (ttt.value_function)# [0.5, 0.505, 0.50505, 0.5050505]
+ttt.print_value_function ()# [0.5, 0.505, 0.50505, 0.5050505]
 
