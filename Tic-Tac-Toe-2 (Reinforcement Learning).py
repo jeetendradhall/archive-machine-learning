@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[40]:
 
 
 #imports
 import random
 from random import randrange
+from IPython.core.debugger import set_trace
 
 
-# In[2]:
+# In[71]:
 
 
 #tic-tac-toe class to encapsulate the following:
@@ -145,7 +146,11 @@ class TicTacToe:
         #initialize the next state to transition to,
         # along with its value
         next_state_max = []
-        next_state_value_max = -1
+        #when comparing to find a higher value (leading to maximum),
+        # the comparison needs to begin with the lowest possible value
+        next_state_value_max = -1*float("inf")
+        #and vice versa
+        next_state_value_min = float("inf")
         
         #try a move for every possible move index
         #find which next-state has maximum value
@@ -156,10 +161,21 @@ class TicTacToe:
             candidate_next_state [i] = mark
             #get value of the board state after the move
             candidate_next_state_value =             self.get_value (candidate_next_state)
-            #keep track of which next-state has maximum value
-            if candidate_next_state_value > next_state_value_max:
-                next_state_max = candidate_next_state
-                next_state_value_max = candidate_next_state_value
+            
+            #seek higher value states for 'X'
+            if mark == 'X':            
+                #keep track of which next-state has maximum value
+                if candidate_next_state_value > next_state_value_max:
+                    next_state_max = candidate_next_state
+                    next_state_value_max = candidate_next_state_value
+            #seek lower value states for 'O'
+            else:
+                #keep track of which next-state has minimum value
+                if candidate_next_state_value < next_state_value_min:
+                    #we have overloaded next_state_max and next_state_value_max
+                    #they actually carry min value and state
+                    next_state_max = candidate_next_state
+                    next_state_value_max = candidate_next_state_value
                 
         return next_state_max, next_state_value_max
     
@@ -298,7 +314,10 @@ class TicTacToe:
                 board, can_play = self.play_a_random_move (board, 'O')
             #if adversary is greedy
             else:
+                print ('before play_a_greedy_move', board)
+                #set_trace ()
                 board, can_play = self.play_a_greedy_move (board, 'O')
+                print ('after play_a_greedy_move', board)
             
             #save a copy of the board (state) after making the move
             stripe_states.append (board.copy ())
@@ -320,17 +339,17 @@ class TicTacToe:
             
 
 
-# In[33]:
+# In[84]:
 
 
 #test learn() (exploratory 'X' and naive 'O')
 ttt = TicTacToe ()
-ttt.learn (10)
+ttt.learn (1000)
 #print states with (value_cutoff, num_moves cutoff)
 ttt.print_value_function (2, 5)
 
 
-# In[36]:
+# In[85]:
 
 
 #test play() (greedy 'X' and naive 'O')
@@ -339,7 +358,7 @@ for i in range (25):
     print (ttt.play (), ' won!!')
 
 
-# In[49]:
+# In[86]:
 
 
 #test play() (greedy 'X' and greedy 'O')
@@ -348,7 +367,7 @@ for i in range (25):
     print (ttt.play (True), ' won!!')
 
 
-# In[ ]:
+# In[76]:
 
 
 #test play_a_stride for exploratory 'X' and naive 'O'
@@ -357,16 +376,17 @@ ttt.play_a_stride ()
 ttt.print_value_function ()
 
 
-# In[ ]:
+# In[59]:
 
 
+#*** IndexError: list index out of range ************************
 #test play_a_stride for exploratory 'X' and greedy 'O'
 ttt = TicTacToe ()
 ttt.play_a_stride (True, False)
 ttt.print_value_function ()
 
 
-# In[ ]:
+# In[60]:
 
 
 #test play_a_stride for greedy 'X' and naive 'O'
@@ -375,7 +395,7 @@ ttt.play_a_stride (False, True)
 ttt.print_value_function ()
 
 
-# In[ ]:
+# In[61]:
 
 
 #test play_a_stride for greedy 'X' and greedy 'O'
@@ -384,7 +404,7 @@ ttt.play_a_stride (False, False)
 ttt.print_value_function ()
 
 
-# In[ ]:
+# In[62]:
 
 
 #test get_winner
@@ -394,7 +414,7 @@ board [0] = board [4] = board [8] = 'X'
 print (ttt.get_winner (board)) #X
 
 
-# In[ ]:
+# In[63]:
 
 
 #test get_value
@@ -406,7 +426,7 @@ board [8] = None
 print (ttt.get_value (board)) #0.5
 
 
-# In[ ]:
+# In[64]:
 
 
 #test play_a_random_move
@@ -418,7 +438,7 @@ board = ['O'] * 9
 print (ttt.play_a_random_move (board, 'X')) #board [O...O], False
 
 
-# In[ ]:
+# In[65]:
 
 
 #test get_next_greedy_state
@@ -430,7 +450,7 @@ next_board, value = ttt.get_next_greedy_state (next_board, 'X')
 print (next_board, value) #board [X X...], 0.5
 
 
-# In[ ]:
+# In[66]:
 
 
 #test play_a_greedy_move
@@ -442,7 +462,7 @@ next_board, value = ttt.play_a_greedy_move (next_board, 'X')
 print (next_board, value) #board [X X...], True
 
 
-# In[ ]:
+# In[67]:
 
 
 #test play_an_explore_exploit_move
@@ -459,7 +479,7 @@ next_board, value = ttt.play_an_explore_exploit_move (next_board, 'X')
 print (next_board, value) #board [X X...X...X...], True
 
 
-# In[ ]:
+# In[68]:
 
 
 #test learn_value
@@ -479,7 +499,7 @@ ttt.learn_value (board_this, board_next)
 ttt.print_value_function () #[0.51, 0.5]
 
 
-# In[ ]:
+# In[69]:
 
 
 #test backpropagate_values for 'X' win
@@ -504,7 +524,7 @@ ttt.backpropagate_values (stripe_states)
 ttt.print_value_function ()# [0.51, 0.5051, 0.505051, 0.50505051]
 
 
-# In[ ]:
+# In[70]:
 
 
 #test backpropagate_values for 'O' win
@@ -527,4 +547,10 @@ for i, mark in stripe_moves:
     
 ttt.backpropagate_values (stripe_states)
 ttt.print_value_function ()# [0.5, 0.505, 0.50505, 0.5050505]
+
+
+# In[ ]:
+
+
+
 
