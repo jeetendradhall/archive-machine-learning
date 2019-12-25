@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[47]:
 
 
 #imports
 import numpy as np
 import gym
 import random
+from IPython.core.debugger import set_trace
 
 
-# In[73]:
+# In[48]:
 
 
 #gym environment
@@ -29,7 +30,7 @@ qtable = np.zeros ((state_size, action_size))
 print (qtable)
 
 
-# In[74]:
+# In[49]:
 
 
 #hyperparameters
@@ -47,11 +48,11 @@ min_epsilon = 0.01
 decay_rate = 0.01 #exponential decay rate for exploration
 
 
-# In[78]:
+# In[50]:
 
 
 # List of rewards
-rewards = []
+#rewards = []
 
 #play episodes
 for episode in range (total_episodes):
@@ -64,6 +65,8 @@ for episode in range (total_episodes):
     
     #iterate upto maximum steps in an episode
     for step in range (max_steps):
+        
+        #set_trace ()
         
         #explore or exploit
         exp_exp_tradeoff = random.uniform (0, 1)
@@ -78,26 +81,51 @@ for episode in range (total_episodes):
         new_state, reward, done, info = env.step (action)
         
         #update the Q-Table
-        qtable [state, action] = qtable [state, action] +         learning_rate * (reward + gamma*np.max(qtable[new_state, :])/
-                         - qtable [state, action])
+        qtable [state, action] = qtable [state, action] +        learning_rate * (reward + gamma*np.max(qtable[new_state, :])                         - qtable [state, action])
         
         #move to the next state
         state = new_state
         
-        total_rewards += reward
+        #total_rewards += reward
         
         #has the passenger reached destination?
         if done:
             break
             
-    #move to the next episode
-    episode += 1
+        #print(qtable[state])
     
     #reduce exploration with increasing episodes
     epsilon = min_epsilon + (max_epsilon - min_epsilon)    * np.exp (-decay_rate * episode)
     
-print ("Score over time: " +  str(sum(rewards)/total_episodes))
+#print ("Score over time: " +  str(sum(rewards)/total_episodes))
 print(qtable)
+
+
+# In[59]:
+
+
+env.reset ()
+rewards = [] #list of rewards in episodes
+for episode in range (total_test_episodes):
+    state = env.reset () #begin the episode with a fresh state
+    done = False
+    step = 0 #how many steps completed in this iteration
+    total_rewards = 0 #rewards collected in this episode
+    for step in range (max_steps):
+        action = np.argmax(qtable [state, :]) #greedy action
+        #take the action
+        new_state, reward, done, info = env.step (action)
+        #accumulate the reward
+        total_rewards += reward
+        #has the passenger reached destination?
+        if done:
+            rewards.append (total_rewards)
+            break #move to the next episode
+        #if passenger hasn't reached destination
+        # move to the next state
+        state = new_state
+env.close ()
+print ('average rewards', str(sum(rewards)/total_test_episodes))
 
 
 # In[ ]:
