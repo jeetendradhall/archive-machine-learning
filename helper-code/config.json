@@ -1,0 +1,6 @@
+{
+	"data-folder": "/Users/sheetal/mydrive/repositories/machine-learning/datasets/titanic",
+	"train-data-file": "train.csv",
+	"test-data-file": "test.csv",
+	"raw-file": "raw.csv"
+}
